@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model dokumen {
+  id               String    @id @unique
+  nama             String?
+  jenis_dokumen    String?
+  nama_file        String?
+  jenis_file       String?
+  tanggal_upload   DateTime?
+  tautan           String?   @db.VarChar(2550)
+  keterangan       String?   @db.VarChar(10000)
+  id_jenis_dokumen Int?
+  id_sdm           String
+  dosen            dosen     @relation(fields: [id_sdm], references: [id_sdm])
+
+  @@index([id_sdm], map: "dokumen_id_sdm_fkey")
+}
+
+model dosen {
+  id                  String              @id
+  id_sdm              String              @unique
+  nama_sdm            String?
+  nidn                String?
+  nip                 String?
+  nama_status_aktif   String?
+  nama_status_pegawai String?
+  jenis_sdm           String?
+  dokumen             dokumen[]
+  pendidikan_formal   pendidikan_formal[]
+}
+
+model pendidikan_formal {
+  id                    String  @id @unique
+  jenjang_pendidikan    String?
+  gelar_akademik        String?
+  bidang_studi          String?
+  nama_perguruan_tinggi String?
+  tahun_lulus           Int?
+  id_sdm                String
+  dosen                 dosen   @relation(fields: [id_sdm], references: [id_sdm])
+
+  @@index([id_sdm], map: "pendidikan_formal_id_sdm_fkey")
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  password String?
+  image         String?
+  accounts      Account[]
+}
+
+model VerificationToken {
+  id String @id @default(cuid())
+  email String
+  token String @unique @db.VarChar(500)
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+model PasswordResetToken {
+  id String @id @default(cuid())
+  email String
+  token String @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
