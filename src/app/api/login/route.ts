@@ -1,4 +1,4 @@
-
+export const dynamic = 'force-dynamic';
 import * as bcrypt from "bcrypt";
 import prismadb from "../../../../lib/prismadb";
 import { signJwtAccessToken } from "../../../../lib/jwt";
