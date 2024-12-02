@@ -4,7 +4,7 @@ export const getVerificationTokenByToken = async (
     token: string
 ) => {
     try {
-        const verificationToken = await prismadb.verificationToken.findUnique({
+        const verificationToken = await prismadb.verificationtoken.findUnique({
             where: { token }
         });
 
@@ -18,7 +18,7 @@ export const getVerificationTokenByEmail = async (
     email: string
 ) => {
     try {
-        const verificationToken = await prismadb.verificationToken.findFirst({
+        const verificationToken = await prismadb.verificationtoken.findFirst({
             where: { email }
         });
 

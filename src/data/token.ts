@@ -15,13 +15,14 @@ export const generatePasswordResetToken = async (email: string) => {
     const existingToken = await getPasswordResetTokenByEmail(email);
 
     if (existingToken) {
-        await prismadb.passwordResetToken.delete({
+        await prismadb.passwordresettoken.delete({
             where: { id: existingToken.id }
         });
     }
 
-    const passwordResetToken = await prismadb.passwordResetToken.create({
+    const passwordResetToken = await prismadb.passwordresettoken.create({
         data: {
+            id: uuidv4(),
             email,
             token,
             expires
@@ -40,15 +41,16 @@ export const generateVerificationToken = async (email: string) => {
     const existingToken = await getVerificationTokenByEmail(email);
 
     if (existingToken) {
-        await prismadb.verificationToken.delete({
+        await prismadb.verificationtoken.delete({
             where: {
                 id: existingToken.id,
             },
         });
     }
 
-    const verficationToken = await prismadb.verificationToken.create({
+    const verficationToken = await prismadb.verificationtoken.create({
         data: {
+            id: uuidv4(),
             email,
             token,
             expires,
