@@ -16,6 +16,7 @@ export async function POST(req: Request) {
 
         const user = await prismadb.user.create({
             data: {
+                id: crypto.randomUUID(),
                 name,
                 email,
                 password: hashedPassword
