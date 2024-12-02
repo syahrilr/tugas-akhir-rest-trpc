@@ -3,8 +3,7 @@
 import * as z from "zod";
 import { AuthError } from "next-auth";
 
-import prismadb  from "../lib/prismadb";
-import { signIn } from "@/auth";
+import { signIn } from "../lib/auth";
 import { LoginSchema } from "@/schemas";
 import { getUserByEmail } from "@/data/user";
 import {

@@ -6,6 +6,8 @@ import prismadb from "./prismadb";
 export const {
     handlers: {GET, POST},
     auth,
+    signIn,
+    signOut
 } = NextAuth({
     callbacks: {
         async jwt({ token, user, trigger, session }) {
