@@ -21,8 +21,9 @@ export async function POST(request: Request) {
         const accessToken = signJwtAccessToken(userWithoutPass);
 
 
-        await prismadb.verificationToken.create({
+        await prismadb.verificationtoken.create({
             data: {
+                id: crypto.randomUUID(),
                 token: accessToken,
                 email: userWithoutPass.email as string,
                 expires: new Date(Date.now() + 1000 * 60 * 60 * 24),
