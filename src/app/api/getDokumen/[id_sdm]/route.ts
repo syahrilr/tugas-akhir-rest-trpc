@@ -12,7 +12,7 @@ export async function GET(req: Request, { params }: { params: { id_sdm: string }
             return NextResponse.json({
                 success: false,
                 data: 0,
-                message: "Unauthorized"
+                message: "Unauthorized: Token tidak ditemukan"
             }, {
                 status: 401
             });
@@ -24,36 +24,35 @@ export async function GET(req: Request, { params }: { params: { id_sdm: string }
             return NextResponse.json({
                 success: false,
                 data: 0,
-                message: "Unauthorized Token yang anda masukkan salah"
+                message: "Unauthorized: Token yang anda masukkan salah"
             }, {
                 status: 401
             });
         }
 
-        const id_sdm = params.id_sdm;
+        const { id_sdm } = params;
 
         if (!id_sdm) {
             return NextResponse.json({
                 success: false,
                 data: 0,
-                message: "id_sdm tidak boleh kosong"
+                message: "Bad Request: id_sdm tidak boleh kosong"
             }, {
                 status: 400
             });
         }
 
-        // Check Redis cache for the pendidikan data using id_sdm
-        const chaceDokumen = await redis.get(`dokumenData:${id_sdm}`);
 
-        if (chaceDokumen) {
+        // Check Redis cache for the dokumen data using id_sdm
+        const cachedDokumen = await redis.get(`dokumenData:${id_sdm}`);
+
+        if (cachedDokumen) {
             // If data is cached, return it
-            console.log('[PEGAWAI] Data pendidikan telah diambil dari Redis');
+            console.log('[DOKUMEN] Data dokumen diambil dari Redis');
 
-            const parsedDokumen = JSON.parse(chaceDokumen as string);
             return NextResponse.json({
                 success: true,
-                data: parsedDokumen.length,
-                pendidikan: parsedDokumen
+                dokumen: cachedDokumen
             }, {
                 status: 200
             });
@@ -66,9 +65,19 @@ export async function GET(req: Request, { params }: { params: { id_sdm: string }
             }
         });
 
-        // Store the dokumen data in Redis without expiration time (or set expiry if needed)
-        await redis.set(`dokumenData:${id_sdm}`, JSON.stringify(dokumen)); // No expiration
-        console.log('[PEGAWAI] Data dokumen telah disimpan di Redis');
+        if (!dokumen || dokumen.length === 0) {
+            return NextResponse.json({
+                success: false,
+                data: 0,
+                message: "Data dokumen tidak ditemukan"
+            }, {
+                status: 404
+            });
+        }
+
+        // Store the dokumen data in Redis with an expiration time (e.g., 24 hours)
+        await redis.setex(`dokumenData:${id_sdm}`, 60 * 60 * 24, JSON.stringify(dokumen)); // Set expiry to 24 hours
+        console.log('[DOKUMEN] Data dokumen disimpan di Redis');
 
         return NextResponse.json({
             success: true,
@@ -79,8 +88,7 @@ export async function GET(req: Request, { params }: { params: { id_sdm: string }
         });
 
     } catch (error) {
-        console.log('[DOKUMEN]', error);
+        console.error('[DOKUMEN] Error:', error);
         return new NextResponse('[DOKUMEN] Internal error', { status: 500 });
     }
-
 }

@@ -12,7 +12,7 @@ export async function GET(req: Request, { params }: { params: { id_sdm: string }
             return NextResponse.json({
                 success: false,
                 data: 0,
-                message: "Unauthorized"
+                message: "Unauthorized: Token tidak ditemukan"
             }, {
                 status: 401
             });
@@ -24,36 +24,35 @@ export async function GET(req: Request, { params }: { params: { id_sdm: string }
             return NextResponse.json({
                 success: false,
                 data: 0,
-                message: "Unauthorized Token yang anda masukkan salah"
+                message: "Unauthorized: Token yang anda masukkan salah"
             }, {
                 status: 401
             });
         }
 
-        const id_sdm = params.id_sdm;
+        const { id_sdm } = params;
 
         if (!id_sdm) {
             return NextResponse.json({
                 success: false,
                 data: 0,
-                message: "id_sdm tidak boleh kosong"
+                message: "Bad Request: id_sdm tidak boleh kosong"
             }, {
                 status: 400
             });
         }
+
 
         // Check Redis cache for the pendidikan data using id_sdm
         const cachedPendidikan = await redis.get(`pendidikanData:${id_sdm}`);
 
         if (cachedPendidikan) {
             // If data is cached, return it
-            console.log('[PEGAWAI] Data pendidikan telah diambil dari Redis');
+            console.log('[PEGAWAI] Data pendidikan diambil dari Redis');
 
-            const parsedPendidikan = JSON.parse(cachedPendidikan as string);
             return NextResponse.json({
                 success: true,
-                data: parsedPendidikan.length,
-                pendidikan: parsedPendidikan
+                pendidikan: cachedPendidikan
             }, {
                 status: 200
             });
@@ -66,9 +65,19 @@ export async function GET(req: Request, { params }: { params: { id_sdm: string }
             }
         });
 
-        // Store the pendidikan data in Redis without expiration time (or set expiry if needed)
-        await redis.set(`pendidikanData:${id_sdm}`, JSON.stringify(pendidikan)); // No expiration
-        console.log('[PEGAWAI] Data pendidikan telah disimpan di Redis');
+        if (!pendidikan || pendidikan.length === 0) {
+            return NextResponse.json({
+                success: false,
+                data: 0,
+                message: "Data pendidikan tidak ditemukan"
+            }, {
+                status: 404
+            });
+        }
+
+        // Store the pendidikan data in Redis with an expiration time (e.g., 24 hours)
+        await redis.setex(`pendidikanData:${id_sdm}`, 60 * 60 * 24, JSON.stringify(pendidikan)); // Set expiry to 24 hours
+        console.log('[PEGAWAI] Data pendidikan disimpan di Redis');
 
         return NextResponse.json({
             success: true,
@@ -79,7 +88,7 @@ export async function GET(req: Request, { params }: { params: { id_sdm: string }
         });
 
     } catch (error) {
-        console.log('[PEGAWAI]', error);
+        console.error('[PEGAWAI] Error:', error);
         return new NextResponse('[PEGAWAI] Internal error', { status: 500 });
     }
 }

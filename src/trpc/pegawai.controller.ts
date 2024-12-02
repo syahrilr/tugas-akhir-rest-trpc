@@ -16,44 +16,46 @@ export const findAllPegawaiController = async ({ tokenInput }: { tokenInput: Tok
             });
         }
 
-        // Check Redis cache for verification token
-        const cachedToken = await redis.get(tokenInput.token);
+        const token = await prismadb.verificationtoken.findFirst({
+            where: { token: tokenInput.token },
+        });
 
-        if (!cachedToken) {
-            // If token is not in cache, check in the database
-            const token = await prismadb.verificationtoken.findFirst({
-                where: { token: tokenInput.token },
+        if (!token) {
+            throw new TRPCError({
+                code: "UNAUTHORIZED",
+                message: "Token tidak valid",
             });
-
-            if (!token) {
-                throw new TRPCError({
-                    code: "UNAUTHORIZED",
-                    message: "Token tidak valid",
-                });
-            }
-
-            if (token.expires < new Date()) {
-                throw new TRPCError({
-                    code: "UNAUTHORIZED",
-                    message: "Token sudah kadaluarsa",
-                });
-            }
-
-            // Cache the token in Redis for future use
-            await redis.setex(tokenInput.token, 60 * 60 * 24, JSON.stringify(token)); // Expires in 24 hours
-            console.log('[VERIFICATION TOKEN] Token disimpan di Redis');
-        } else {
-            console.log('[VERIFICATION TOKEN] Token diambil dari Redis');
         }
 
-        // Check Redis cache for Pegawai data
+        if (token.expires < new Date()) {
+            throw new TRPCError({
+                code: "UNAUTHORIZED",
+                message: "Token sudah kadaluarsa",
+            });
+        }
+
+        // Check Redis cache for the pegawai data
         const cachedPegawai = await redis.get('dosenData');
 
         if (cachedPegawai) {
-            // If data is cached, return it
-            console.log('[PEGAWAI] Data pegawai telah diambil dari Redis');
+            // If data is cached, check if it's already a valid JSON object
+            let parsedPegawai;
+            if (typeof cachedPegawai === "string") {
+                try {
+                    parsedPegawai = JSON.parse(cachedPegawai);
+                } catch (parseError) {
+                    console.error("Error parsing cached pegawai data:", parseError);
+                    throw new TRPCError({
+                        code: "INTERNAL_SERVER_ERROR",
+                        message: "Error parsing cached pegawai data",
+                    });
+                }
+            } else {
+                // If it's already an object, no need to parse
+                parsedPegawai = cachedPegawai;
+            }
 
-            const parsedPegawai = JSON.parse(cachedPegawai as string);
+            console.log('[PEGAWAI] Data pegawai telah diambil dari Redis');
             return {
                 status: "success",
                 result: parsedPegawai.length,
@@ -64,8 +66,8 @@ export const findAllPegawaiController = async ({ tokenInput }: { tokenInput: Tok
         // If data is not cached, fetch from the database
         const pegawai = await prismadb.dosen.findMany();
 
-        // Store the pegawai data in Redis with an expiration time (optional)
-        await redis.setex('dosenData', 60 * 60 * 24, JSON.stringify(pegawai));  // Expires in 24 hours
+        // Store the pegawai data in Redis without expiration time (or set expiry if needed)
+        await redis.set('dosenData', JSON.stringify(pegawai));  // No expiration
         console.log('[PEGAWAI] Data pegawai telah disimpan di Redis');
 
         return {

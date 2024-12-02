@@ -61,10 +61,24 @@ export const findPendidikanFormal = async ({
         const cachedPendidikan = await redis.get(`pendidikanData:${paramsInput.id_sdm}`);
 
         if (cachedPendidikan) {
-            // If data is cached, return it
-            console.log('[PENDIDIKAN DATA] Data telah diambil dari Redis');
+            // If data is cached, check if it's a string before parsing
+            let parsedPendidikan;
+            if (typeof cachedPendidikan === "string") {
+                try {
+                    parsedPendidikan = JSON.parse(cachedPendidikan);
+                } catch (parseError) {
+                    console.error("Error parsing cached pendidikan data:", parseError);
+                    throw new TRPCError({
+                        code: "INTERNAL_SERVER_ERROR",
+                        message: "Error parsing cached pendidikan data",
+                    });
+                }
+            } else {
+                // If it's already an object, no need to parse
+                parsedPendidikan = cachedPendidikan;
+            }
 
-            const parsedPendidikan = JSON.parse(cachedPendidikan as string);
+            console.log('[PENDIDIKAN DATA] Data telah diambil dari Redis');
             return {
                 status: "success",
                 result: parsedPendidikan.length,
@@ -78,6 +92,13 @@ export const findPendidikanFormal = async ({
                 id_sdm: paramsInput.id_sdm
             }
         });
+
+        if (!pendidikan_formal || pendidikan_formal.length === 0) {
+            throw new TRPCError({
+                code: "NOT_FOUND",
+                message: "Pendidikan formal tidak ditemukan"
+            });
+        }
 
         // Store the pendidikan_formal data in Redis with an optional expiration time
         await redis.setex(`pendidikanData:${paramsInput.id_sdm}`, 60 * 60 * 24, JSON.stringify(pendidikan_formal));

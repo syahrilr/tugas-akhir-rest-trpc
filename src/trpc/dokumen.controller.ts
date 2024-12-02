@@ -61,10 +61,24 @@ export const findDokumenSdm = async ({
         const cachedDokumen = await redis.get(`dokumenData:${paramsInput.id_sdm}`);
 
         if (cachedDokumen) {
-            // If data is cached, return it
-            console.log('[DOKUMEN] Data telah diambil dari Redis');
+            // If data is cached, check if it's a string before parsing
+            let parsedDokumen;
+            if (typeof cachedDokumen === "string") {
+                try {
+                    parsedDokumen = JSON.parse(cachedDokumen);
+                } catch (parseError) {
+                    console.error("Error parsing cached dokumen data:", parseError);
+                    throw new TRPCError({
+                        code: "INTERNAL_SERVER_ERROR",
+                        message: "Error parsing cached dokumen data",
+                    });
+                }
+            } else {
+                // If it's already an object, no need to parse
+                parsedDokumen = cachedDokumen;
+            }
 
-            const parsedDokumen = JSON.parse(cachedDokumen as string);
+            console.log('[DOKUMEN] Data telah diambil dari Redis');
             return {
                 status: "success",
                 result: parsedDokumen.length,
