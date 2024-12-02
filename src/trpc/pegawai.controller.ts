@@ -1,43 +1,48 @@
-import { TRPCError } from "@trpc/server"
-import prismadb from "../../lib/prismadb"
-import { TokenInput } from "./trpc.schema"
+import { TRPCError } from "@trpc/server";
+import prismadb from "../../lib/prismadb";
+import { verifyJwt } from "../../lib/jwt";
+import { TokenInput } from "./trpc.schema";
 
-export const findAllPegawaiController = async ({
-    tokenInput
-}: {
-    tokenInput: TokenInput
-}) => {
+export const findAllPegawaiController = async ({ tokenInput }: { tokenInput: TokenInput }) => {
     try {
+        // Verify the JWT
+        const decodedToken = verifyJwt(tokenInput.token);
+
+        if (!decodedToken) {
+            throw new TRPCError({
+                code: "UNAUTHORIZED",
+                message: "Token tidak valid",
+            });
+        }
+
         const token = await prismadb.verificationToken.findFirst({
-            where: {
-                token: tokenInput.token
-            }
-        })
+            where: { token: tokenInput.token },
+        });
 
-        if(!token) {
+        if (!token) {
             throw new TRPCError({
                 code: "UNAUTHORIZED",
-                message: "Token tidak valid"
-            })
+                message: "Token tidak valid",
+            });
         }
 
-        if(token.expires < new Date()) {
+        if (token.expires < new Date()) {
             throw new TRPCError({
                 code: "UNAUTHORIZED",
-                message: "Token sudah kadaluarsa"
-            })
+                message: "Token sudah kadaluarsa",
+            });
         }
 
-        
-        const pegawai = await prismadb.dosen.findMany()
+        // Fetch data
+        const pegawai = await prismadb.dosen.findMany({
+        });
 
         return {
             status: "success",
             result: pegawai.length,
-            pegawai
-        }    
-
+            pegawai,
+        };
     } catch (error) {
-        throw error
+        throw error;
     }
-}
+};

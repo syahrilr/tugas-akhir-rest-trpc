@@ -11,14 +11,14 @@ const t = initTRPC.create({
 
 export const appRouter = t.router({
     getAllPegawai: t.procedure
-    .input(token)
-    .query(({input}) => findAllPegawaiController({tokenInput: input})),
+        .input(token)
+        .query(({ input }) => findAllPegawaiController({ tokenInput: input })),
     getPendidikanFormal: t.procedure
         .input(params)
         .query(({ input }) => findPendidikanFormal({ paramsInput: input })),
     getDokumenSdm: t.procedure
         .input(params)
-        .query(({ input }) => findDokumenSdm({ paramsInput: input})),
+        .query(({ input }) => findDokumenSdm({ paramsInput: input })),
 })
 
 export type AppRouter = typeof appRouter

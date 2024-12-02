@@ -1,14 +1,11 @@
-import { NextApiRequest } from "next";
 import { NextResponse } from "next/server";
-import getServerSession from "next-auth";
-import prismadb from "../../../../lib/prismadb";
-import bcrypt from "bcryptjs";	
+import prismadb from "../../../../lib/prismadb";            
 import { verifyJwt } from "../../../../lib/jwt";
 
 
 export async function GET(req: Request) {
 
-    
+
     try {
         const accessToken = req.headers.get('Authorization');
 
@@ -34,7 +31,7 @@ export async function GET(req: Request) {
                 status: 401
             });
         }
-        
+
 
         const dosen = await prismadb.dosen.findMany();
         return NextResponse.json({
@@ -43,8 +40,8 @@ export async function GET(req: Request) {
             dosen,
         }, {
             status: 200
-        }) 
-        
+        })
+
 
     } catch (error) {
         console.log('[PEGAWAI]', error);

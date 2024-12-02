@@ -25,7 +25,7 @@ export async function POST(request: Request) {
             data: {
                 token: accessToken,
                 email: userWithoutPass.email as string,
-                expires: new Date(Date.now() + 1000 * 60 * 60),
+                expires: new Date(Date.now() + 1000 * 60 * 60 * 24),
             },
         });
 
