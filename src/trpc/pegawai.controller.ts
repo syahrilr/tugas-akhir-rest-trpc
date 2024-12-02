@@ -16,25 +16,37 @@ export const findAllPegawaiController = async ({ tokenInput }: { tokenInput: Tok
             });
         }
 
-        const token = await prismadb.verificationtoken.findFirst({
-            where: { token: tokenInput.token },
-        });
+        // Check Redis cache for verification token
+        const cachedToken = await redis.get(tokenInput.token);
 
-        if (!token) {
-            throw new TRPCError({
-                code: "UNAUTHORIZED",
-                message: "Token tidak valid",
+        if (!cachedToken) {
+            // If token is not in cache, check in the database
+            const token = await prismadb.verificationtoken.findFirst({
+                where: { token: tokenInput.token },
             });
+
+            if (!token) {
+                throw new TRPCError({
+                    code: "UNAUTHORIZED",
+                    message: "Token tidak valid",
+                });
+            }
+
+            if (token.expires < new Date()) {
+                throw new TRPCError({
+                    code: "UNAUTHORIZED",
+                    message: "Token sudah kadaluarsa",
+                });
+            }
+
+            // Cache the token in Redis for future use
+            await redis.setex(tokenInput.token, 60 * 60 * 24, JSON.stringify(token)); // Expires in 24 hours
+            console.log('[VERIFICATION TOKEN] Token disimpan di Redis');
+        } else {
+            console.log('[VERIFICATION TOKEN] Token diambil dari Redis');
         }
 
-        if (token.expires < new Date()) {
-            throw new TRPCError({
-                code: "UNAUTHORIZED",
-                message: "Token sudah kadaluarsa",
-            });
-        }
-
-        // Check Redis cache for the pegawai data
+        // Check Redis cache for Pegawai data
         const cachedPegawai = await redis.get('dosenData');
 
         if (cachedPegawai) {
@@ -52,8 +64,8 @@ export const findAllPegawaiController = async ({ tokenInput }: { tokenInput: Tok
         // If data is not cached, fetch from the database
         const pegawai = await prismadb.dosen.findMany();
 
-        // Store the pegawai data in Redis without expiration time (or set expiry if needed)
-        await redis.set('dosenData', JSON.stringify(pegawai));  // No expiration
+        // Store the pegawai data in Redis with an expiration time (optional)
+        await redis.setex('dosenData', 60 * 60 * 24, JSON.stringify(pegawai));  // Expires in 24 hours
         console.log('[PEGAWAI] Data pegawai telah disimpan di Redis');
 
         return {
