@@ -1,12 +1,13 @@
-
 import * as bcrypt from "bcrypt";
 import prismadb from "../../../../lib/prismadb";
 import { signJwtAccessToken } from "../../../../lib/jwt";
+import { redis } from "../../../../lib/redis";  // Import Redis
 
 interface RequestBody {
     username: string;
     password: string;
 }
+
 export async function POST(request: Request) {
     const body: RequestBody = await request.json();
 
@@ -18,9 +19,33 @@ export async function POST(request: Request) {
 
     if (user && user.password && (await bcrypt.compare(body.password, user.password))) {
         const { password, ...userWithoutPass } = user;
-        const accessToken = signJwtAccessToken(userWithoutPass);
 
+        // Ensure email is valid before using it as the Redis key
+        const email = userWithoutPass.email;
+        if (!email) {
+            return new Response(
+                JSON.stringify({ message: "Email is missing" }),
+                { status: 400 }
+            );
+        }
 
+        // Check if the access token is already cached in Redis
+        const cachedToken = await redis.get(email); // Now safe to use email as Redis key
+
+        let accessToken: string;
+
+        if (cachedToken) {
+            // Token exists in Redis, use it
+            accessToken = cachedToken;
+        } else {
+            // Token does not exist, create a new one
+            accessToken = signJwtAccessToken(userWithoutPass);
+
+            // Store the new access token in Redis with a 24-hour expiration
+            await redis.setex(email, 60 * 60 * 24, accessToken);  // key is user's email
+        }
+
+        // Store the verification token in the database
         await prismadb.verificationtoken.create({
             data: {
                 id: crypto.randomUUID(),
@@ -35,13 +60,14 @@ export async function POST(request: Request) {
             accessToken,
         };
         return new Response(JSON.stringify(result));
-    } else
+    } else {
         return new Response(
             JSON.stringify({
-                message: "Unathenticated",
+                message: "Unauthenticated",
             }),
             {
                 status: 401,
             }
         );
+    }
 }
