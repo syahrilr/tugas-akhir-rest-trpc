@@ -64,7 +64,7 @@ export const findPendidikanFormal = async ({
             // If data is cached, return it
             console.log('[PENDIDIKAN DATA] Data telah diambil dari Redis');
 
-            const parsedPendidikan = JSON.parse(cachedPendidikan);
+            const parsedPendidikan = JSON.parse(cachedPendidikan as string);
             return {
                 status: "success",
                 result: parsedPendidikan.length,

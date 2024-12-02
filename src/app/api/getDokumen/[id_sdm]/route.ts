@@ -51,7 +51,7 @@ export async function GET(req: Request, { params }: { params: { id_sdm: string }
             // If data is cached, return it
             console.log('[DOKUMEN] Data dokumen telah diambil dari Redis');
 
-            const parsedDokumen = JSON.parse(cachedDokumen);
+            const parsedDokumen = JSON.parse(cachedDokumen as string);
             return NextResponse.json({
                 success: true,
                 data: parsedDokumen.length,

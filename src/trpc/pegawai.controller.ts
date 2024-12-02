@@ -53,7 +53,7 @@ export const findAllPegawaiController = async ({ tokenInput }: { tokenInput: Tok
             // If data is cached, return it
             console.log('[PEGAWAI] Data pegawai telah diambil dari Redis');
 
-            const parsedPegawai = JSON.parse(cachedPegawai);
+            const parsedPegawai = JSON.parse(cachedPegawai as string);
             return {
                 status: "success",
                 result: parsedPegawai.length,

@@ -1,11 +1,23 @@
-import {Redis} from 'ioredis';
+import { Redis } from '@upstash/redis';
 
 const getRedisUrl = () => {
-    if(process.env.REDIS_URL) {
-        return process.env.REDIS_URL;
+    if (process.env.KV_URL) {
+        return process.env.KV_URL;
     }
 
-    throw new Error('REDIS_URL is not defined');
+    throw new Error('KV_URL is not defined');
 }
 
-export const redis = new Redis(getRedisUrl());
+const getRedisToken = () => {
+    if (process.env.KV_REST_API_TOKEN) {
+        return process.env.KV_REST_API_TOKEN;
+    }
+
+    throw new Error('KV_REST_API_TOKEN is not defined');
+}
+
+// Initialize Redis client with the correct config
+export const redis = new Redis({
+    url: getRedisUrl(),         // Pass the Redis URL
+    token: getRedisToken(),     // Pass the Redis token (if required)
+});

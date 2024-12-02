@@ -37,7 +37,7 @@ export async function GET(req: Request) {
             // If data is cached, return it
             console.log('[PEGAWAI] Data dosen telah diambil dari Redis');
             
-            const parsedDosen = JSON.parse(cachedDosen);
+            const parsedDosen = JSON.parse(cachedDosen as string);
             return NextResponse.json({
                 success: true,
                 data: parsedDosen.length,

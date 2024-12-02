@@ -64,7 +64,7 @@ export const findDokumenSdm = async ({
             // If data is cached, return it
             console.log('[DOKUMEN] Data telah diambil dari Redis');
 
-            const parsedDokumen = JSON.parse(cachedDokumen);
+            const parsedDokumen = JSON.parse(cachedDokumen as string);
             return {
                 status: "success",
                 result: parsedDokumen.length,

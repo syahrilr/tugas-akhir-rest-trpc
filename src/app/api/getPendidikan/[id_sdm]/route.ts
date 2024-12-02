@@ -49,7 +49,7 @@ export async function GET(req: Request, { params }: { params: { id_sdm: string }
             // If data is cached, return it
             console.log('[PEGAWAI] Data pendidikan telah diambil dari Redis');
 
-            const parsedPendidikan = JSON.parse(cachedPendidikan);
+            const parsedPendidikan = JSON.parse(cachedPendidikan as string);
             return NextResponse.json({
                 success: true,
                 data: parsedPendidikan.length,
