@@ -1,8 +1,7 @@
-const createClient = require('redis').createClient;
-
-const CacheHandler = require('@neshca/cache-handler').CacheHandler;
-const createLruCache = require('@neshca/cache-handler/local-lru').default;
-const createRedisCache = require('@neshca/cache-handler/redis-strings').default;
+import { createClient } from 'redis';
+import { CacheHandler } from '@neshca/cache-handler';
+import createLruCache from '@neshca/cache-handler/local-lru';
+import createRedisCache from '@neshca/cache-handler/redis-strings';
 
 CacheHandler.onCreation(async () => {
     const localCache = createLruCache({
@@ -28,27 +27,23 @@ CacheHandler.onCreation(async () => {
             redisCache = createRedisCache({
                 client,
                 keyPrefix: `next-shared-cache-${process.env.NEXT_PUBLIC_BUILD_NUMBER}:`,
-                // timeout for the Redis client operations like `get` and `set`
-                // after this timeout, the operation will be considered failed and the `localCache` will be used
                 timeoutMs: 5000,
             });
         } catch (error) {
             console.log(
                 'Failed to initialize Redis cache, using local cache only.',
-                error,
+                error
             );
         }
     }
 
     return {
-        handlers: [redisCache, localCache],
+        handlers: [redisCache, localCache].filter(Boolean), // Remove undefined handlers
         ttl: {
-            // This value is also used as revalidation time for every ISR site
             defaultStaleAge: process.env.NEXT_PUBLIC_CACHE_IN_SECONDS,
-            // This makes sure, that resources without set revalidation time aren't stored infinitely in Redis
             estimateExpireAge: (staleAge) => staleAge,
         },
     };
 });
 
-module.exports = CacheHandler;
+export default CacheHandler;
