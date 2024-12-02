@@ -8,7 +8,7 @@ export const findPendidikanFormal = async ({
     paramsInput: ParamsInput
 }) => {
     try {
-        const token = await prismadb.verificationToken.findFirst({
+        const token = await prismadb.verificationtoken.findFirst({
             where: {
                 token: paramsInput.token
             }

@@ -15,7 +15,7 @@ export const findAllPegawaiController = async ({ tokenInput }: { tokenInput: Tok
             });
         }
 
-        const token = await prismadb.verificationToken.findFirst({
+        const token = await prismadb.verificationtoken.findFirst({
             where: { token: tokenInput.token },
         });
 
