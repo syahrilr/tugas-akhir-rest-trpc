@@ -1,11 +1,11 @@
 import { Redis } from '@upstash/redis';
 
 const getRedisUrl = () => {
-    if (process.env.KV_URL) {
-        return process.env.KV_URL;
+    if (process.env.KV_REST_API_URL) {
+        return process.env.KV_REST_API_URL;
     }
 
-    throw new Error('KV_URL is not defined');
+    throw new Error('KV_REST_API_URL is not defined');
 }
 
 const getRedisToken = () => {
