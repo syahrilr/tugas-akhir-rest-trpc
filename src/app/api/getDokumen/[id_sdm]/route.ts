@@ -42,20 +42,18 @@ export async function GET(req: Request, { params }: { params: { id_sdm: string }
             });
         }
 
-        console.log(id_sdm);
+        // Check Redis cache for the pendidikan data using id_sdm
+        const chaceDokumen = await redis.get(`dokumenData:${id_sdm}`);
 
-        // Check Redis cache for the dokumen data using id_sdm
-        const cachedDokumen = await redis.get(`dokumenData:${id_sdm}`);
-
-        if (cachedDokumen) {
+        if (chaceDokumen) {
             // If data is cached, return it
-            console.log('[DOKUMEN] Data dokumen telah diambil dari Redis');
+            console.log('[PEGAWAI] Data pendidikan telah diambil dari Redis');
 
-            const parsedDokumen = JSON.parse(cachedDokumen as string);
+            const parsedDokumen = JSON.parse(chaceDokumen as string);
             return NextResponse.json({
                 success: true,
                 data: parsedDokumen.length,
-                dokumen: parsedDokumen
+                pendidikan: parsedDokumen
             }, {
                 status: 200
             });
@@ -70,7 +68,7 @@ export async function GET(req: Request, { params }: { params: { id_sdm: string }
 
         // Store the dokumen data in Redis without expiration time (or set expiry if needed)
         await redis.set(`dokumenData:${id_sdm}`, JSON.stringify(dokumen)); // No expiration
-        console.log('[DOKUMEN] Data dokumen telah disimpan di Redis');
+        console.log('[PEGAWAI] Data dokumen telah disimpan di Redis');
 
         return NextResponse.json({
             success: true,
@@ -84,4 +82,5 @@ export async function GET(req: Request, { params }: { params: { id_sdm: string }
         console.log('[DOKUMEN]', error);
         return new NextResponse('[DOKUMEN] Internal error', { status: 500 });
     }
+
 }
