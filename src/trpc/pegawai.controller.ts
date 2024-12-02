@@ -1,7 +1,8 @@
 import { TRPCError } from "@trpc/server";
-import { verifyJwt } from "../../lib/jwt";
 import prismadb from "../../lib/prismadb";
+import { verifyJwt } from "../../lib/jwt";
 import { TokenInput } from "./trpc.schema";
+import { redis } from "../../lib/redis"; // Import Redis client
 
 export const findAllPegawaiController = async ({ tokenInput }: { tokenInput: TokenInput }) => {
     try {
@@ -33,8 +34,41 @@ export const findAllPegawaiController = async ({ tokenInput }: { tokenInput: Tok
             });
         }
 
-        // Fetch data from the database
+        // Check Redis cache for the pegawai data
+        const cachedPegawai = await redis.get('dosenData');
+
+        if (cachedPegawai) {
+            // If data is cached, check if it's already a valid JSON object
+            let parsedPegawai;
+            if (typeof cachedPegawai === "string") {
+                try {
+                    parsedPegawai = JSON.parse(cachedPegawai);
+                } catch (parseError) {
+                    console.error("Error parsing cached pegawai data:", parseError);
+                    throw new TRPCError({
+                        code: "INTERNAL_SERVER_ERROR",
+                        message: "Error parsing cached pegawai data",
+                    });
+                }
+            } else {
+                // If it's already an object, no need to parse
+                parsedPegawai = cachedPegawai;
+            }
+
+            console.log('[PEGAWAI] Data pegawai telah diambil dari Redis');
+            return {
+                status: "success",
+                result: parsedPegawai.length,
+                pegawai: parsedPegawai,
+            };
+        }
+
+        // If data is not cached, fetch from the database
         const pegawai = await prismadb.dosen.findMany();
+
+        // Store the pegawai data in Redis without expiration time (or set expiry if needed)
+        await redis.set('dosenData', JSON.stringify(pegawai));  // No expiration
+        console.log('[PEGAWAI] Data pegawai telah disimpan di Redis');
 
         return {
             status: "success",
